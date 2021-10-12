@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.deployment.application_name}}
+  namespace: {{.Values.deployment.application_name}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{.Values.deployment.application_name}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.deployment.application_name}}
+        version: "1"
+    spec:
+      securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          #runAsUser: 10001
+      containers:
+      - env:
+        - name: APPD_PROXY_CONTROL_PATH
+          value: /tmp/appd/run
+        name: {{.Values.deployment.application_name}}
+        image: {{.Values.deployment.image}}:{{.Values.deployment.image_tag}}
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: agent-config
+            mountPath: /shim.js
+            subPath: shim.js
+        ports:
+        - containerPort: 5050
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 5050
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 5050
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: agent-config
+          configMap:
+            name: appd-nodejs-cm
+      
+
+

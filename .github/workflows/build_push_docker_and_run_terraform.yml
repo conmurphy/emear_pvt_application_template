@@ -15,7 +15,7 @@ env:
   
 jobs:
   build-and-push-docker-image:
-    if: github.event.base_ref == 'refs/heads/main1'
+    if: github.event.base_ref == 'refs/heads/main'
     name: Build Docker image and push to repositories
     runs-on: ubuntu-latest
     steps:
@@ -64,9 +64,12 @@ jobs:
         with:
           files: 'helm/charts/Chart.yaml, helm/charts/values.yaml'
         env:
+          name: ${{ github.event.repository.name }}
           appVersion: ${{ env.TAG }}
           version: ${{ env.TAG }}
           deployment.image_tag: ${{ env.TAG }}
+          deployment.image: conmurphy/${{ github.event.repository.name }}
+          deployment.application_name: ${{ github.event.repository.name }}
       
       - name: Check it worked
         run: |
@@ -84,21 +87,20 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-      # Publishing the helm chart to use in the future
-      # Below it is packaged to use with terraform
-      # - name: Run Publish Helm charts
-      #   uses: stefanprodan/helm-gh-pages@master
-      #   with:
-      #     token: ${{ secrets.GITHUB_TOKEN }}
-      #     charts_dir: helm
-      #     linting: off
-      #     branch: gh-pages
-      #     target_dir: helm/packages
+ 
+      #Publishing the helm chart to use in the future
+      #Below it is packaged to use with terraform
+      - name: Run Publish Helm charts
+        uses: stefanprodan/helm-gh-pages@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          charts_dir: helm
+          linting: off
+          branch: gh-pages
+          target_dir: helm/packages
 
   deploy-with-terraform:
     # runs after a success build and push of the helm chart
-    if: github.event.base_ref == 'refs/heads/main1'
     needs: build-and-push-helm-chart
     name: Deploy latest image with Terraform
     runs-on: ubuntu-latest
@@ -114,9 +116,12 @@ jobs:
         with:
           files: 'helm/charts/Chart.yaml, helm/charts/values.yaml'
         env:
+          name: ${{ github.event.repository.name }}
           appVersion: ${{ env.TAG }}
           version: ${{ env.TAG }}
           deployment.image_tag: ${{ env.TAG }}
+          deployment.image: conmurphy/${{ github.event.repository.name }}
+          deployment.application_name: ${{ github.event.repository.name }}
 
       - name: Install Helm
         uses: azure/setup-helm@v1
@@ -136,7 +141,9 @@ jobs:
         env:
           resource.0.helm_release.0.helm_release.0.version: ${{ env.TAG }}
           resource.0.helm_release.0.helm_release.0.chart: ./${{ github.event.repository.name }}-${{ env.TAG }}.tgz
-
+          resource.0.helm_release.0.helm_release.0.name: ${{ github.event.repository.name }}
+          resource.0.helm_release.0.helm_release.0.namespace: ${{ github.event.repository.name }}
+          
       - name: upload repo to terraform cloud
         run: |
           pwd

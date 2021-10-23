@@ -12,6 +12,7 @@ env:
     TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
     TFC_ORG: ${{ secrets.TFC_ORG }}
     TFC_WORKSPACE: ${{ secrets.TFC_WORKSPACE }}
+    REDIS_ACCESS_KEY: ${{ secrets.REDIS_ACCESS_KEY }}
   
 jobs:
   build-and-push-docker-image:
@@ -110,7 +111,12 @@ jobs:
 
       - name: Get the tag name
         run: echo "TAG=${GITHUB_REF:10}" >> $GITHUB_ENV #
-      
+
+      - name: Get service name 
+        run: | 
+            echo "SERVICE_NAME=$(echo ${{ github.event.repository.name }} | cut -d- -f2)" >> $GITHUB_ENV
+            printenv
+            echo $SERVICE_NAME
       - name: Update app and helm chart version in the Chart.yaml file
         uses: microsoft/variable-substitution@v1 
         with:
@@ -122,6 +128,8 @@ jobs:
           deployment.image_tag: ${{ env.TAG }}
           deployment.image: conmurphy/${{ github.event.repository.name }}
           deployment.application_name: ${{ github.event.repository.name }}
+          deployment.redis_access_key: ${{ env.REDIS_ACCESS_KEY }}
+          configmap.service_name: ${{ env.SERVICE_NAME }}
 
       - name: Install Helm
         uses: azure/setup-helm@v1
@@ -143,7 +151,7 @@ jobs:
           resource.0.helm_release.0.helm_release.0.chart: ./${{ github.event.repository.name }}-${{ env.TAG }}.tgz
           resource.0.helm_release.0.helm_release.0.name: ${{ github.event.repository.name }}
           resource.0.helm_release.0.helm_release.0.namespace: ${{ github.event.repository.name }}
-          
+
       - name: upload repo to terraform cloud
         run: |
           pwd

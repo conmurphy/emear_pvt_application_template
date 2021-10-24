@@ -84,21 +84,21 @@ jobs:
         with: 
           config_file: tests/checkov/config.yaml
           
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      # - name: Configure Git
+      #   run: |
+      #     git config user.name "$GITHUB_ACTOR"
+      #     git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
  
-      #Publishing the helm chart to use in the future
-      #Below it is packaged to use with terraform
-      - name: Run Publish Helm charts
-        uses: stefanprodan/helm-gh-pages@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          charts_dir: helm
-          linting: off
-          branch: gh-pages
-          target_dir: helm/packages
+      # #Publishing the helm chart to use in the future
+      # #Below it is packaged to use with terraform
+      # - name: Run Publish Helm charts
+      #   uses: stefanprodan/helm-gh-pages@master
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     charts_dir: helm
+      #     linting: off
+      #     branch: gh-pages
+      #     target_dir: helm/packages
 
   deploy-with-terraform:
     # runs after a success build and push of the helm chart
